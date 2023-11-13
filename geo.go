@@ -36,34 +36,22 @@ func GCHandlerFunc(publickey, Mongostring, dbname, colname string, r *http.Reque
 	return ReturnStringStruct(resp)
 }
 
-func GCFPostCoordinate(Mongostring, Publickey, dbname, colname string, r *http.Request) string {
+func GCFPostCoordinate(Mongostring, dbname, colname string, r *http.Request) string {
 	req := new(Credents)
 	conn := GetConnectionMongo(Mongostring, dbname)
 	resp := new(LonLatProperties)
 	err := json.NewDecoder(r.Body).Decode(&resp)
-	tokenlogin := r.Header.Get("Login")
-	if tokenlogin == "" {
+	if err != nil {
 		req.Status = strconv.Itoa(http.StatusNotFound)
-		req.Message = "Header Login Not Exist"
+		req.Message = "error parsing application/json: " + err.Error()
 	} else {
-		existing := IsExist(tokenlogin, os.Getenv(Publickey))
-		if !existing {
-			req.Status = strconv.Itoa(http.StatusNotFound)
-			req.Message = "Kamu kayaknya belum punya akun"
-		} else {
-			if err != nil {
-				req.Status = strconv.Itoa(http.StatusNotFound)
-				req.Message = "error parsing application/json: " + err.Error()
-			} else {
-				req.Status = strconv.Itoa(http.StatusOK)
-				Ins := InsertDataLonlat(conn, colname,
-					resp.Coordinates,
-					resp.Name,
-					resp.Volume,
-					resp.Type)
-				req.Message = fmt.Sprintf("%v:%v", "Berhasil Input data", Ins)
-			}
-		}
+		req.Status = strconv.Itoa(http.StatusOK)
+		Ins := InsertDataLonlat(conn, colname,
+			resp.Coordinates,
+			resp.Name,
+			resp.Volume,
+			resp.Type)
+		req.Message = fmt.Sprintf("%v:%v", "Berhasil Input data", Ins)
 	}
 	return ReturnStringStruct(req)
 }
